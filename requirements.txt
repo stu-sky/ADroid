@@ -1,0 +1,9 @@
+androguard==3.4.0a1
+matplotlib==3.2.2
+networkx==2.3
+numpy==1.18.5
+python_igraph==0.10.2cl
+scikit_learn==1.1.2
+torch==1.8.1
+torch_geometric==2.0.2
+torchmetrics==0.6.0
