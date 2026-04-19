@@ -27,14 +27,18 @@ parser.add_argument('--pooling_ratio', type=float, default=0.7,
                     help='pooling ratio')
 parser.add_argument('--dropout_ratio', type=float, default=0.5,
                     help='dropout ratio')
-parser.add_argument('--dataset', type=str, default='MalDroid2020',
+parser.add_argument('--dataset', type=str, default=os.getenv('DATASET_NAME', 'MalDroid2020'),
                     help='name of dataset')
+parser.add_argument('--dataset_root', type=str, default=os.getenv('DATA_ROOT', '../dataset'),
+                    help='dataset root path')
 parser.add_argument('--epochs', type=int, default=10000,
                     help='maximum number of epochs')
 parser.add_argument('--patience', type=int, default=50,
                     help='patience for earlystopping')
 parser.add_argument('--pooling_layer_type', type=str, default='GCNConv',
                    help='DD/PROTEINS/NCI1/NCI109/Mutagenicity')
+parser.add_argument('--model_path', type=str, default=os.getenv('MODEL_PATH', 'latest.pth'),
+                    help='checkpoint file path')
 
 args=parser.parse_args()
 args.device='cpu'
@@ -42,7 +46,7 @@ torch.manual_seed(args.seed)
 if torch.cuda.is_available():
     torch.cuda.manual_seed(args.seed)
     args.device = 'cuda:0'
-dataset=MyDataset("../dataset",name=args.dataset,use_node_attr=True)
+dataset=MyDataset(args.dataset_root,name=args.dataset,use_node_attr=True)
 args.num_classes=dataset.num_classes
 args.num_features=dataset.num_features
 
@@ -126,7 +130,7 @@ for epoch in range(args.epochs):
     val_loss,val_acc,val_precision,val_recall ,val_F1,val_fpr= test(model,val_loader)
     print("Validation loss:{}\taccuracy:{}\tprecision:{}\trecall:{}\tFPR:{}\tF1_Socre:{}".format(val_loss, val_acc,val_precision,val_recall,val_fpr,val_F1))
     if val_loss < min_loss:
-        torch.save(model.state_dict(),'latest.pth')
+        torch.save(model.state_dict(), args.model_path)
         print("Model saved at epoch{}".format(epoch))
         min_loss = val_loss
         patience = 0
@@ -136,7 +140,7 @@ for epoch in range(args.epochs):
         break
 
 model = Net(args).to(args.device)
-model.load_state_dict(torch.load('latest.pth'))
+model.load_state_dict(torch.load(args.model_path, map_location=args.device))
 test_loss,test_acc,test_precision,test_recall,test_F1,test_fpr= test(model,test_loader)
 print("Test accuarcy:"+str(test_acc))
 print("Test precison:"+str(test_precision))

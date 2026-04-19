@@ -2,6 +2,7 @@
 生成raw数据
 """
 
+import argparse
 import os
 import networkx as nx
 from attributes import betweenness, closeness, pagerank, degree
@@ -9,7 +10,7 @@ from numpy import random
 import torch
 import random
 from labels import Analyze, Labeling
-from file_path import callgraph_root, data_root, sensitive_API_root
+from file_path import load_project_paths
 
 offical_Suspicious_API = []
 
@@ -45,16 +46,18 @@ def subgraph(G):
     return SG
 
 
-def read_sensitive_API():
-    with open(sensitive_API_root, 'r', encoding='utf-8') as f:
+def read_sensitive_API(sensitive_api_path):
+    offical_Suspicious_API.clear()
+    with open(sensitive_api_path, 'r', encoding='utf-8') as f:
         for line in f.readlines():
             line = line.strip()
             offical_Suspicious_API.append(line)
 
 
 class DataLoad(object):
-    def __init__(self, source_root, target_root, name):
+    def __init__(self, source_root, target_root, name, sensitive_api_path):
         self.name = name
+        self.sensitive_api_path = sensitive_api_path
         self.node_num = 1
         self.graph_num = 1
         self.path = os.path.join(target_root, self.name)
@@ -65,7 +68,7 @@ class DataLoad(object):
 
     def file_create(self):
 
-        read_sensitive_API()
+        read_sensitive_API(self.sensitive_api_path)
 
         if not os.path.join(self.path):
             os.makedirs(self.path)
@@ -178,4 +181,21 @@ class DataLoad(object):
 
 
 if __name__ == '__main__':
-    DataLoad(callgraph_root, data_root, "MalDroid2020")
+    parser = argparse.ArgumentParser(description="Generate TU-format raw graph dataset from callgraphs.")
+    parser.add_argument(
+        "--dataset_name",
+        type=str,
+        default=os.getenv("DATASET_NAME", "MalDroid2020"),
+        help="Target dataset name.",
+    )
+    parser.add_argument("--callgraph_root", type=str, default=None, help="Input callgraph root path.")
+    parser.add_argument("--data_root", type=str, default=None, help="Output dataset root path.")
+    parser.add_argument("--sensitive_api_root", type=str, default=None, help="Sensitive API file path.")
+    args = parser.parse_args()
+
+    paths = load_project_paths(
+        callgraph_root_value=args.callgraph_root,
+        data_root_value=args.data_root,
+        sensitive_api_root_value=args.sensitive_api_root,
+    )
+    DataLoad(paths.callgraph_root, paths.data_root, args.dataset_name, paths.sensitive_API_root)

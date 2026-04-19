@@ -3,6 +3,7 @@ dataset的制作
 '''
 
 from typing import Optional, Callable, List
+import argparse
 import os
 import os.path as osp
 import shutil
@@ -110,8 +111,15 @@ class MyDataset(InMemoryDataset):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Inspect dataset statistics.")
+    parser.add_argument("--dataset_root", type=str, default=os.getenv("DATA_ROOT", "../dataset"),
+                        help="dataset root path")
+    parser.add_argument("--dataset_name", type=str, default=os.getenv("DATASET_NAME", "MalDroid2020"),
+                        help="dataset name")
+    args = parser.parse_args()
+
     print("==================================================================")
-    dataset=MyDataset("../dataset","MalDroid2020",use_node_attr=True)
+    dataset=MyDataset(args.dataset_root,args.dataset_name,use_node_attr=True)
     print(f'Number of graphs: {len(dataset)}')
     print(f'Number of features: {dataset.num_features}')
     print(f'Number of node attributes:{dataset.num_node_attributes}')

@@ -4,15 +4,10 @@
 
 """
 
-from androguard.misc import AnalyzeAPK
-from androguard.core.analysis.analysis import ExternalMethod
-import matplotlib.pyplot as plt
-import networkx as nx
+import argparse
 import os
-
-# 指定源与目标文件夹
-apk_root = r"E:\test\apk"
-callgraph_root = r"E:\test\callgraph"
+from pathlib import Path
+from file_path import load_project_paths
 
 
 # os.chdir(dataset_path)
@@ -21,18 +16,19 @@ callgraph_root = r"E:\test\callgraph"
 
 def graph_Generate(source_root, target_root):
     if os.path.exists(source_root):
+        os.makedirs(target_root, exist_ok=True)
         for class_folder in os.listdir(source_root):
             print("正在处理的apk标签：", class_folder)
             class_folder_path = os.path.join(source_root, class_folder)
             if class_folder == "benign":
-                callgraph_benign_path = target_root + "\\" + class_folder
+                callgraph_benign_path = os.path.join(target_root, class_folder)
                 if not os.path.exists(callgraph_benign_path):
                     os.mkdir(callgraph_benign_path)
                     print("创建" + class_folder + "文件夹")
                 Execute(class_folder_path, callgraph_benign_path)
 
             if class_folder == "malware":
-                callgraph_malware_path = target_root + "\\" + class_folder
+                callgraph_malware_path = os.path.join(target_root, class_folder)
                 if not os.path.exists(callgraph_malware_path):
                     os.mkdir(callgraph_malware_path)
                     print("创建" + class_folder + "文件夹")
@@ -59,11 +55,21 @@ def Execute(source_path, target_path):
         apk_path = os.path.join(source_path, apk_name)
         # 去除.apk后缀(如果存在)
         apk_name = os.path.splitext(apk_name)[0]
-        op = 'androguard cg ' + apk_path + ' -o ' + target_path + "\\" + apk_name + '.gml'
+        output_path = os.path.join(target_path, apk_name + '.gml')
+        op = 'androguard cg ' + apk_path + ' -o ' + output_path
         print(op)
         # 执行生成call graph命令:androguard cg xx.apk -o ./xx.gml
         os.system(op)
 
 
 if __name__ == '__main__':
-    graph_Generate(apk_root, callgraph_root)
+    parser = argparse.ArgumentParser(description="Generate function call graphs from APK files.")
+    parser.add_argument("--apk_root", type=str, default=None, help="APK root path (benign/malware).")
+    parser.add_argument("--callgraph_root", type=str, default=None, help="Output callgraph root path.")
+    args = parser.parse_args()
+
+    paths = load_project_paths(
+        apk_root_value=args.apk_root,
+        callgraph_root_value=args.callgraph_root,
+    )
+    graph_Generate(str(Path(paths.apk_root)), str(Path(paths.callgraph_root)))
